@@ -14,8 +14,10 @@ public interface SponsorSegment {
     String CATEGORY_PREVIEW_RECAP = "preview";
     String CATEGORY_POI_HIGHLIGHT = "poi_highlight";
     String CATEGORY_FILLER = "filler";
+    String CATEGORY_EXCLUSIVE_ACCESS = "exclusive_access";
     String ACTION_SKIP = "skip";
     String ACTION_MUTE = "mute";
+    String ACTION_POI = "poi";
 
     long getStartMs();
     long getEndMs();

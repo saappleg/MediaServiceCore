@@ -67,6 +67,27 @@ internal object PoTokenGate {
     fun getColdStartPoToken(client: AppClient, videoId: String): String? =
         if (client.isWebPotRequired) PoTokenService.generateColdStartToken(videoId) else null
 
+    /**
+     * Initializes the reusable WebPO minter before the user starts playback.
+     *
+     * BgUtils recommends reusing one minter while the page/runtime remains alive. Warming it as
+     * part of the existing background cache refresh moves the expensive BotGuard initialization
+     * out of the playback path without persisting short-lived attestation state to disk.
+     */
+    @JvmStatic
+    fun warmUp() {
+        if (!PoTokenProviderImpl.isWebPotSupported ||
+            (mWebPoToken != null && !PoTokenProviderImpl.isWebPotExpired)) {
+            return
+        }
+
+        try {
+            mWebPoToken = PoTokenProviderImpl.getWebClientPoToken("")
+        } catch (error: Throwable) {
+            // Prewarming is an optimization. Playback retains the normal retry/fallback path.
+        }
+    }
+
     @JvmStatic
     fun getVisitorData(client: AppClient): String? {
         return when {

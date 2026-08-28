@@ -28,6 +28,11 @@ internal abstract class JsRuntimeChalBaseJCP: JsChallengeProvider() {
         ScriptType.LIB to "${libPrefix}yt.solver.lib.js",
         ScriptType.CORE to "${libPrefix}yt.solver.core.js"
     )
+    private val gson = Gson()
+    private val hotPlayerLock = Any()
+    private var hotPlayerUrl: String? = null
+    private var hotPlayerCode: String? = null
+    private var hotPlayerJson: String? = null
 
     private val minScriptFilenames = mapOf(
         ScriptType.LIB to "yt.solver.lib.min.js",
@@ -40,20 +45,35 @@ internal abstract class JsRuntimeChalBaseJCP: JsChallengeProvider() {
         val grouped: Map<String, List<JsChallengeRequest>> = requests.groupBy { it.input.playerUrl }
 
         for ((playerUrl, groupedRequests) in grouped) {
-            val data = ie.cache.load(cacheSection, "player:$playerUrl")
-            var player = data?.code
+            val cacheStartedAt = System.currentTimeMillis()
+            val memoryPlayer = synchronized(hotPlayerLock) {
+                hotPlayerCode?.takeIf { hotPlayerUrl == playerUrl }
+            }
+            val data = if (memoryPlayer == null) ie.cache.load(cacheSection, "player:$playerUrl") else null
+            var player = memoryPlayer ?: data?.code
+            val cacheDurationMs = System.currentTimeMillis() - cacheStartedAt
 
+            val playerStartedAt = System.currentTimeMillis()
             val cached = if (player != null) {
                 true
             } else {
                 player = getPlayer(playerUrl)
                 false
             }
+            val playerDurationMs = System.currentTimeMillis() - playerStartedAt
 
-            val stdin = constructStdin(player, cached, groupedRequests)
+            if (cached) {
+                rememberPlayer(playerUrl, player)
+            }
+
+            val inputStartedAt = System.currentTimeMillis()
+            val stdin = constructStdin(playerUrl, player, cached, groupedRequests)
+            val inputDurationMs = System.currentTimeMillis() - inputStartedAt
+            val runtimeStartedAt = System.currentTimeMillis()
             val stdout = runJsRuntime(stdin)
+            val runtimeDurationMs = System.currentTimeMillis() - runtimeStartedAt
 
-            val gson = Gson()
+            val outputStartedAt = System.currentTimeMillis()
             val output: SolverOutput = try {
                 gson.fromJson(stdout, solverOutputType)
             } catch (e: JsonSyntaxException) {
@@ -64,8 +84,22 @@ internal abstract class JsRuntimeChalBaseJCP: JsChallengeProvider() {
                 throw JsChallengeProviderError(output.error ?: "Unknown solver output error")
 
             val preprocessed = output.preprocessed_player
-            if (preprocessed != null)
+            if (preprocessed != null) {
                 ie.cache.store(cacheSection, "player:$playerUrl", CachedData(preprocessed))
+                rememberPlayer(playerUrl, preprocessed)
+            }
+            val outputDurationMs = System.currentTimeMillis() - outputStartedAt
+
+            Log.d(
+                tag,
+                "Challenge preparation cached=%s cache=%d ms player=%d ms input=%d ms runtime=%d ms output=%d ms",
+                cached,
+                cacheDurationMs,
+                playerDurationMs,
+                inputDurationMs,
+                runtimeDurationMs,
+                outputDurationMs
+            )
 
             for ((request, responseData) in groupedRequests.zip(output.responses)) {
                 if (responseData.type == "error") {
@@ -80,7 +114,7 @@ internal abstract class JsRuntimeChalBaseJCP: JsChallengeProvider() {
         }
     }
 
-    private fun constructStdin(player: String, preprocessed: Boolean, requests: List<JsChallengeRequest>): String {
+    private fun constructStdin(playerUrl: String, player: String, preprocessed: Boolean, requests: List<JsChallengeRequest>): String {
         val jsonRequests = requests.map { request ->
             mapOf(
                 // TODO: i despise nsig name
@@ -89,25 +123,53 @@ internal abstract class JsRuntimeChalBaseJCP: JsChallengeProvider() {
                 "challenges" to request.input.challenges
             )
         }
-        val data = if (preprocessed) {
-            mapOf(
-                "type" to "preprocessed",
-                "preprocessed_player" to player,
-                "requests" to jsonRequests
-            )
+        val jsonData = if (preprocessed) {
+            val playerJson = synchronized(hotPlayerLock) {
+                hotPlayerJson?.takeIf { hotPlayerUrl == playerUrl } ?: gson.toJson(player).also {
+                    hotPlayerUrl = playerUrl
+                    hotPlayerCode = player
+                    hotPlayerJson = it
+                }
+            }
+            """{"type":"preprocessed","preprocessed_player":$playerJson,"requests":${gson.toJson(jsonRequests)}}"""
         } else {
-            mapOf(
+            gson.toJson(mapOf(
                 "type" to "player",
                 "player" to player,
                 "requests" to jsonRequests,
                 "output_preprocessed" to true
-            )
+            ))
         }
-        val gson = Gson()
-        val jsonData = gson.toJson(data)
         return """
         JSON.stringify(jsc($jsonData));
         """
+    }
+
+    private fun rememberPlayer(playerUrl: String, player: String) {
+        synchronized(hotPlayerLock) {
+            if (hotPlayerUrl != playerUrl || hotPlayerCode != player) {
+                hotPlayerUrl = playerUrl
+                hotPlayerCode = player
+                hotPlayerJson = null
+            }
+        }
+    }
+
+    protected fun warmPlayerData(playerUrl: String) {
+        val alreadyWarm = synchronized(hotPlayerLock) {
+            hotPlayerUrl == playerUrl && hotPlayerCode != null && hotPlayerJson != null
+        }
+        if (alreadyWarm) {
+            return
+        }
+
+        val player = ie.cache.load(cacheSection, "player:$playerUrl")?.code ?: return
+        rememberPlayer(playerUrl, player)
+        synchronized(hotPlayerLock) {
+            if (hotPlayerUrl == playerUrl && hotPlayerJson == null) {
+                hotPlayerJson = gson.toJson(player)
+            }
+        }
     }
 
     protected fun constructCommonStdin(): String {

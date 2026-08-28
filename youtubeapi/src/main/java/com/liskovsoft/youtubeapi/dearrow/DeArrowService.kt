@@ -24,13 +24,39 @@ internal object DeArrowService {
                     // '>' character is used in some titles to tell the DeArrow formatter which words to leave alone
                     // Example: https://sponsor.ajay.app/api/branding?videoID=dtp6b76pMak
                     // https://github.com/yuliskov/MediaServiceCore/pull/9
-                    return it.titles?.firstOrNull { !(it?.original ?: false) }?.title?.replace(">", "")
+                    return it.titles
+                        ?.firstOrNull { title ->
+                            title != null &&
+                                !title.original.orFalse() &&
+                                title.isTrusted() &&
+                                !title.title.isNullOrBlank()
+                        }
+                        ?.title
+                        ?.replace(">", "")
                 }
 
                 override fun getThumbnailUrl(): String? {
-                    return it.thumbnails?.firstOrNull { !(it?.original ?: false) }?.let { "${DeArrowApiHelper.THUMBNAIL_URL}?videoID=$videoId&time=${it.timestamp}" }
+                    return it.thumbnails
+                        ?.firstOrNull { thumbnail ->
+                            thumbnail != null &&
+                                !thumbnail.original.orFalse() &&
+                                thumbnail.isTrusted() &&
+                                thumbnail.timestamp != null
+                        }
+                        ?.let { thumbnail ->
+                            "${DeArrowApiHelper.THUMBNAIL_URL}?videoID=$videoId&time=${thumbnail.timestamp}"
+                        }
                 }
             }
         }
     }
+
+    private fun Boolean?.orFalse() = this ?: false
+
+    /** The public API marks locked or non-negatively scored submissions as safe to display. */
+    private fun com.liskovsoft.youtubeapi.dearrow.data.BrandingList.Title.isTrusted() =
+        locked == true || (votes ?: -1) >= 0
+
+    private fun com.liskovsoft.youtubeapi.dearrow.data.BrandingList.Thumbnail.isTrusted() =
+        locked == true || (votes ?: -1) >= 0
 }

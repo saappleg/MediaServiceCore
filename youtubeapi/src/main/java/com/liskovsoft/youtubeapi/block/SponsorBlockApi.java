@@ -15,9 +15,27 @@ public interface SponsorBlockApi {
     @GET(SponsorBlockApiHelper.SEGMENTS_URL)
     Call<SegmentList> getSegments(@Query("videoID") String videoId, @Query(value = "categories", encoded = true) String categoriesJsonArray);
 
+    @GET(SponsorBlockApiHelper.SEGMENTS_URL)
+    Call<SegmentList> getSegmentsWithActions(@Query("videoID") String videoId,
+                                             @Query(value = "actionTypes", encoded = true) String actionTypesJsonArray);
+
+    @GET(SponsorBlockApiHelper.SEGMENTS_URL)
+    Call<SegmentList> getSegments(@Query("videoID") String videoId,
+                                  @Query(value = "categories", encoded = true) String categoriesJsonArray,
+                                  @Query(value = "actionTypes", encoded = true) String actionTypesJsonArray);
+
     @GET(SponsorBlockApiHelper.SEGMENTS_URL2)
     Call<SegmentList> getSegments2(@Query("videoID") String videoId);
 
     @GET(SponsorBlockApiHelper.SEGMENTS_URL2)
     Call<SegmentList> getSegments2(@Query("videoID") String videoId, @Query(value = "categories", encoded = true) String categoriesJsonArray);
+
+    @GET(SponsorBlockApiHelper.SEGMENTS_URL2)
+    Call<SegmentList> getSegments2WithActions(@Query("videoID") String videoId,
+                                              @Query(value = "actionTypes", encoded = true) String actionTypesJsonArray);
+
+    @GET(SponsorBlockApiHelper.SEGMENTS_URL2)
+    Call<SegmentList> getSegments2(@Query("videoID") String videoId,
+                                   @Query(value = "categories", encoded = true) String categoriesJsonArray,
+                                   @Query(value = "actionTypes", encoded = true) String actionTypesJsonArray);
 }

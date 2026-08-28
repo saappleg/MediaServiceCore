@@ -132,6 +132,7 @@ public class AppServiceInt {
         getAppInfoData();
         getClientData();
         getPlayerDataExtractor();
+        PoTokenGate.warmUp();
     }
 
     protected MediaServiceData getData() {

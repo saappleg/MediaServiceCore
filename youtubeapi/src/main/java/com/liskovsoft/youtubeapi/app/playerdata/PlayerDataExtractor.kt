@@ -3,6 +3,7 @@ package com.liskovsoft.youtubeapi.app.playerdata
 import com.eclipsesource.v8.V8ScriptExecutionException
 import com.liskovsoft.googlecommon.common.helpers.YouTubeHelper
 import com.liskovsoft.sharedutils.helpers.Helpers
+import com.liskovsoft.sharedutils.mylogger.Log
 import com.liskovsoft.youtubeapi.app.nsigsolver.common.YouTubeInfoExtractor
 import com.liskovsoft.youtubeapi.app.nsigsolver.impl.V8ChallengeProvider
 import com.liskovsoft.youtubeapi.app.nsigsolver.provider.ChallengeInput
@@ -102,16 +103,18 @@ internal class PlayerDataExtractor(val playerUrl: String) {
         var nProcessed: List<String?>? = null
         var sProcessed: List<String?>? = null
 
+        val requestStartedAt = System.currentTimeMillis()
         val nRequest = nParams?.takeIf { nFuncCode }?.filterNotNull()?.takeIf { it.isNotEmpty() }?.distinct()?.let {
             JsChallengeRequest(JsChallengeType.N, ChallengeInput(fixedPlayerUrl, it))
         }
-
         val sRequest = sParams?.takeIf { sFuncCode }?.filterNotNull()?.takeIf { it.isNotEmpty() }?.distinct()?.let {
             JsChallengeRequest(JsChallengeType.SIG, ChallengeInput(fixedPlayerUrl, it))
         }
+        val requestDurationMs = System.currentTimeMillis() - requestStartedAt
 
         val result = V8ChallengeProvider.bulkSolve(listOfNotNull(nRequest, sRequest))
 
+        val solveStartedAt = System.currentTimeMillis()
         for (item in result) {
             when (item.response?.type) {
                 JsChallengeType.N ->
@@ -121,6 +124,17 @@ internal class PlayerDataExtractor(val playerUrl: String) {
                 else -> {}
             }
         }
+        val solveDurationMs = System.currentTimeMillis() - solveStartedAt
+
+        Log.d(
+            tag,
+            "Challenge solve requests=%d n=%d sig=%d build=%d ms solve-and-map=%d ms",
+            listOfNotNull(nRequest, sRequest).size,
+            nRequest?.input?.challenges?.size ?: 0,
+            sRequest?.input?.challenges?.size ?: 0,
+            requestDurationMs,
+            solveDurationMs
+        )
 
         return Pair(nProcessed, sProcessed)
     }
@@ -167,7 +181,7 @@ internal class PlayerDataExtractor(val playerUrl: String) {
 
     private fun checkSigData() {
         if (nFuncCode && sFuncCode) {
-            V8ChallengeProvider.warmup() // enable hot start
+            V8ChallengeProvider.warmup(fixedPlayerUrl) // enable hot start
             return
         }
 

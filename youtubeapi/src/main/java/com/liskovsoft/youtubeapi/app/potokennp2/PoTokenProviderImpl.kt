@@ -141,11 +141,7 @@ internal object PoTokenProviderImpl : PoTokenProvider {
             }
         }
 
-        Log.d(
-            TAG,
-            "poToken for $videoId: playerPot=$playerPot, " +
-                    "streamingPot=$streamingPot, visitor_data=$visitorData"
-        )
+        Log.d(TAG, "Generated WebPO tokens")
 
         return PoTokenResult(videoId, visitorData, playerPot, streamingPot)
     }

@@ -127,7 +127,8 @@ public class JsonPathTypeAdapter<T> {
                 jsonVal = parser.read(path);
                 break;
             } catch (PathNotFoundException e) {
-                Log.d(TAG, type.getSimpleName() + ": Path not found: " + path);
+                // Optional paths are expected to be absent across YouTube client variants.
+                // Logging every miss is extremely expensive while parsing large player payloads.
             }
         }
 

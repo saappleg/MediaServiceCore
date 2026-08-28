@@ -80,9 +80,13 @@ public class YouTubeMediaItemService implements MediaItemService {
 
         VideoInfo videoInfo = getVideoInfoService().getVideoInfo(videoId, clickTrackingParams);
 
+        long formatInfoStartedAt = System.currentTimeMillis();
         MediaItemFormatInfo formatInfo = YouTubeMediaItemFormatInfo.from(videoInfo);
+        Log.d(TAG, "Format model conversion completed in %d ms", System.currentTimeMillis() - formatInfoStartedAt);
 
+        long cacheStartedAt = System.currentTimeMillis();
         setCachedFormatInfo(formatInfo, clickTrackingParams);
+        Log.d(TAG, "Format model cache update completed in %d ms", System.currentTimeMillis() - cacheStartedAt);
 
         return formatInfo;
     }

@@ -24,16 +24,21 @@ internal class VideoUrlHolder(private var url: String? = null,
     private var extractedSParam: String? = null
     private var realSignature: String? = null
     private var urlQuery: UrlQueryString? = null
+    private var serializedUrl: String? = null
 
     fun getUrl(): String? {
         parseCipher()
 
-        // Bypass query creation if url isn't transformed
-        return urlQuery?.toString() ?: url
+        // Query serialization is relatively expensive and each format is read several
+        // times while the playback model is built. Reuse it until a parameter changes.
+        val query = urlQuery ?: return url
+        return serializedUrl ?: query.toString().also { serializedUrl = it }
     }
 
     fun setUrl(url: String?) {
         this.url = url
+        urlQuery = null
+        serializedUrl = null
     }
 
     /**
@@ -111,6 +116,7 @@ internal class VideoUrlHolder(private var url: String? = null,
 
         if (queryString != null && paramName != null && paramValue != null) {
             queryString.set(paramName, paramValue)
+            serializedUrl = null
         }
     }
 

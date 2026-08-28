@@ -82,6 +82,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
         YouTubeMediaItemFormatInfo formatInfo = new YouTubeMediaItemFormatInfo();
 
+        long adaptiveStartedAt = System.currentTimeMillis();
         if (videoInfo.getAdaptiveFormats() != null) {
             formatInfo.mContainsAdaptiveVideoFormats = videoInfo.containsAdaptiveVideoInfo();
 
@@ -91,7 +92,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
                 formatInfo.mAdaptiveFormats.add(YouTubeMediaFormat.from(format));
             }
         }
+        Log.d(TAG, "Adaptive format copy count=%d completed in %d ms",
+                formatInfo.mAdaptiveFormats != null ? formatInfo.mAdaptiveFormats.size() : 0,
+                System.currentTimeMillis() - adaptiveStartedAt);
 
+        long regularStartedAt = System.currentTimeMillis();
         if (videoInfo.getRegularFormats() != null) {
             formatInfo.mUrlFormats = new ArrayList<>();
 
@@ -99,7 +104,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
                 formatInfo.mUrlFormats.add(YouTubeMediaFormat.from(format));
             }
         }
+        Log.d(TAG, "Regular format copy count=%d completed in %d ms",
+                formatInfo.mUrlFormats != null ? formatInfo.mUrlFormats.size() : 0,
+                System.currentTimeMillis() - regularStartedAt);
 
+        long metadataStartedAt = System.currentTimeMillis();
         VideoDetails videoDetails = videoInfo.getVideoDetails();
 
         if (videoDetails != null) {
@@ -141,7 +150,9 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         formatInfo.mPoToken = videoInfo.getPoToken();
         formatInfo.mVisitorCookie = videoInfo.getVisitorCookie();
         formatInfo.mClient = videoInfo.getClient();
+        Log.d(TAG, "Scalar format metadata copy completed in %d ms", System.currentTimeMillis() - metadataStartedAt);
 
+        long subtitlesStartedAt = System.currentTimeMillis();
         List<CaptionTrack> captionTracks = videoInfo.getCaptionTracks();
 
         if (captionTracks != null) {
@@ -151,6 +162,9 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
                 formatInfo.mSubtitles.add(YouTubeMediaSubtitle.from(track));
             }
         }
+        Log.d(TAG, "Subtitle copy count=%d completed in %d ms",
+                formatInfo.mSubtitles != null ? formatInfo.mSubtitles.size() : 0,
+                System.currentTimeMillis() - subtitlesStartedAt);
 
         return formatInfo;
     }

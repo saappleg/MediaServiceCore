@@ -85,8 +85,10 @@ public class YouTubeMediaFormat implements MediaFormat {
         mediaFormat.mFps = fps;
         mediaFormat.mFormat = format.getFormat();
         mediaFormat.mIsOtf = format.isOTF();
-        mediaFormat.mOtfInitUrl = format.getOtfInitUrl();
-        mediaFormat.mOtfTemplateUrl = format.getOtfTemplateUrl();
+        if (mediaFormat.mIsOtf) {
+            mediaFormat.mOtfInitUrl = format.getOtfInitUrl();
+            mediaFormat.mOtfTemplateUrl = format.getOtfTemplateUrl();
+        }
         mediaFormat.mSourceUrl = format.getSourceURL();
         mediaFormat.mSegmentUrlList = format.getSegmentUrlList();
         mediaFormat.mGlobalSegmentList = format.getGlobalSegmentList();

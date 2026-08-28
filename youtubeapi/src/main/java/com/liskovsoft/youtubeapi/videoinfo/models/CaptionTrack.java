@@ -58,6 +58,8 @@ public class CaptionTrack {
     @JsonPath("$.kind")
     private String mType;
     private UrlQueryString mBaseUrlQuery;
+    private String mSerializedBaseUrl;
+    private CaptionFormat mSerializedFormat;
 
     public String getBaseUrl() {
         UrlQueryString baseUrlQuery = getBaseUrlQuery();
@@ -66,9 +68,13 @@ public class CaptionTrack {
             return null;
         }
 
-        baseUrlQuery.set("fmt", sFormat.name);
-        
-        return baseUrlQuery.toString();
+        if (mSerializedBaseUrl == null || mSerializedFormat != sFormat) {
+            baseUrlQuery.set("fmt", sFormat.name);
+            mSerializedBaseUrl = baseUrlQuery.toString();
+            mSerializedFormat = sFormat;
+        }
+
+        return mSerializedBaseUrl;
     }
 
     public boolean isTranslatable() {

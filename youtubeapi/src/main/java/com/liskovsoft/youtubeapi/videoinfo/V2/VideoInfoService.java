@@ -9,13 +9,14 @@ import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.app.PoTokenGate;
 import com.liskovsoft.youtubeapi.common.helpers.AppClient;
 import com.liskovsoft.googlecommon.common.helpers.RetrofitHelper;
+import com.liskovsoft.googlecommon.common.converters.jsonpath.converter.FastJsonPathConverterFactory;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 import com.liskovsoft.youtubeapi.innertube.initialresponse.InitialResponseService;
 import com.liskovsoft.youtubeapi.videoinfo.VideoInfoServiceBase;
 import com.liskovsoft.youtubeapi.videoinfo.models.CaptionTrack;
 import com.liskovsoft.youtubeapi.videoinfo.models.TranslationLanguage;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
-import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfoHls;
+import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfoHlsGson;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfoReel;
 
 import java.util.Arrays;
@@ -30,6 +31,7 @@ public class VideoInfoService extends VideoInfoServiceBase {
     private static final AppClient WEB_CLIENT = AppClient.WEB_EMBED;
     private static VideoInfoService sInstance;
     private final VideoInfoApi mVideoInfoApi;
+    private final VideoInfoHlsApi mVideoInfoHlsApi;
     private final static AppClient[] VIDEO_INFO_TYPE_LIST = {
             AppClient.WEB_EMBED, // Restricted (18+) videos
             AppClient.VISIONOS, // no url formats
@@ -56,7 +58,8 @@ public class VideoInfoService extends VideoInfoServiceBase {
     private boolean mIsUnplayable;
 
     private VideoInfoService() {
-        mVideoInfoApi = RetrofitHelper.create(VideoInfoApi.class);
+        mVideoInfoApi = RetrofitHelper.buildRetrofit(FastJsonPathConverterFactory.create()).create(VideoInfoApi.class);
+        mVideoInfoHlsApi = RetrofitHelper.create(VideoInfoHlsApi.class);
     }
 
     public static VideoInfoService instance() {
@@ -88,7 +91,9 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
         applyFixesIfNeeded(result, videoId, clickTrackingParams);
 
+        long transformStartMs = System.currentTimeMillis();
         transformFormats(result);
+        Log.d(TAG, "Format transformation completed in %d ms", System.currentTimeMillis() - transformStartMs);
 
         persistRecentTypeIfNeeded(result);
 
@@ -138,7 +143,11 @@ public class VideoInfoService extends VideoInfoServiceBase {
         AppClient nextType = beginType;
 
         do {
+            long requestStartMs = System.currentTimeMillis();
             VideoInfo result = getVideoInfoWithRentFix(nextType, videoId, clickTrackingParams);
+            Log.d(TAG, "Video info client %s completed in %d ms (playable=%s)",
+                    nextType.name(), System.currentTimeMillis() - requestStartMs,
+                    result != null && !result.isUnplayable());
 
             if (result != null && infoTester.test(result)) {
                 return result;
@@ -255,13 +264,13 @@ public class VideoInfoService extends VideoInfoServiceBase {
         return videoInfo.getVideoInfo();
     }
 
-    private VideoInfoHls getVideoInfoIOSHls(String videoId, String clickTrackingParams) {
+    private VideoInfoHlsGson getVideoInfoIOSHls(String videoId, String clickTrackingParams) {
         String videoInfoQuery = VideoInfoApiHelper.getVideoInfoQuery(IOS_CLIENT, videoId, clickTrackingParams);
         return getVideoInfoHls(IOS_CLIENT, videoInfoQuery);
     }
 
-    private VideoInfoHls getVideoInfoHls(AppClient client, String videoInfoQuery) {
-        Call<VideoInfoHls> wrapper = mVideoInfoApi.getVideoInfoHls(videoInfoQuery, mAppService.getVisitorData(),
+    private VideoInfoHlsGson getVideoInfoHls(AppClient client, String videoInfoQuery) {
+        Call<VideoInfoHlsGson> wrapper = mVideoInfoHlsApi.getVideoInfoHls(videoInfoQuery, mAppService.getVisitorData(),
                 client.getUserAgent(), client.getInnerTubeName(), client.getClientVersion());
 
         return RetrofitHelper.get(wrapper, client.isAuthSupported() && mAuthBlock);
@@ -275,7 +284,9 @@ public class VideoInfoService extends VideoInfoServiceBase {
         if (shouldObtainExtendedFormats(result) || result.isStoryboardBroken()) {
             Log.d(TAG, "Enable high bitrate formats...");
             mAuthBlock = false;
-            VideoInfoHls videoInfoHls = getVideoInfoIOSHls(videoId, clickTrackingParams);
+            long supplementStartMs = System.currentTimeMillis();
+            VideoInfoHlsGson videoInfoHls = getVideoInfoIOSHls(videoId, clickTrackingParams);
+            Log.d(TAG, "High bitrate supplement completed in %d ms", System.currentTimeMillis() - supplementStartMs);
             if (videoInfoHls != null && shouldObtainExtendedFormats(result)) {
                 result.setHlsManifestUrl(videoInfoHls.getHlsManifestUrl());
             }

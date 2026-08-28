@@ -65,7 +65,9 @@ public abstract class VideoInfoServiceBase {
             }
         urlHolders.add(videoInfo.getUrlHolder());
 
+        long signatureStartMs = System.currentTimeMillis();
         Pair<List<String>, List<String>> result = mAppService.bulkSigExtract(extractNParams(urlHolders), extractSParams(urlHolders));
+        Log.d(TAG, "Signature and throttle decipher completed in %d ms", System.currentTimeMillis() - signatureStartMs);
 
         if (result != null) {
             List<String> nParams = result.getFirst();
@@ -75,7 +77,9 @@ public abstract class VideoInfoServiceBase {
             applySignatures(urlHolders, signatures);
         }
 
+        long poTokenStartMs = System.currentTimeMillis();
         String poToken = PoTokenGate.getPoToken(videoInfo.getClient(), videoInfo.getVideoDetails().getVideoId());
+        Log.d(TAG, "Playback token binding completed in %d ms", System.currentTimeMillis() - poTokenStartMs);
         videoInfo.setPoToken(poToken);
         applySessionPoToken(urlHolders, poToken);
     }

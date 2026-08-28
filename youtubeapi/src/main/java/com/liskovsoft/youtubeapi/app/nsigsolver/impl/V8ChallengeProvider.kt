@@ -2,6 +2,7 @@ package com.liskovsoft.youtubeapi.app.nsigsolver.impl
 
 import com.eclipsesource.v8.V8
 import com.eclipsesource.v8.V8ScriptExecutionException
+import com.liskovsoft.sharedutils.mylogger.Log
 import com.liskovsoft.youtubeapi.app.nsigsolver.common.loadScript
 import com.liskovsoft.youtubeapi.app.nsigsolver.common.withLock
 import com.liskovsoft.youtubeapi.app.nsigsolver.provider.JsChallengeProviderError
@@ -35,11 +36,27 @@ internal object V8ChallengeProvider: JsRuntimeChalBaseJCP() {
 
     override fun runJsRuntime(stdin: String): String {
         synchronized(v8Lock) {
+            val runtimeWasReady = v8Runtime != null
+            val initStartedAt = System.currentTimeMillis()
             initRuntime()
+            val initDurationMs = System.currentTimeMillis() - initStartedAt
 
+            val executionStartedAt = System.currentTimeMillis()
             val result = runV8(stdin)
+            val executionDurationMs = System.currentTimeMillis() - executionStartedAt
 
+            val shutdownStartedAt = System.currentTimeMillis()
             shutdownIfNeeded()
+            val shutdownDurationMs = System.currentTimeMillis() - shutdownStartedAt
+
+            Log.d(
+                tag,
+                "V8 challenge runtime ready=%s init=%d ms execute=%d ms shutdown=%d ms",
+                runtimeWasReady,
+                initDurationMs,
+                executionDurationMs,
+                shutdownDurationMs
+            )
 
             return result
         }
@@ -75,9 +92,13 @@ internal object V8ChallengeProvider: JsRuntimeChalBaseJCP() {
         v8Runtime = null
     }
     
-    fun warmup() {
+    fun warmup(playerUrl: String? = null) {
         synchronized(v8Lock) {
             initRuntime()
+        }
+
+        if (playerUrl != null) {
+            warmPlayerData(playerUrl)
         }
     }
 

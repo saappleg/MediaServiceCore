@@ -21,6 +21,13 @@ public class YouTubeSponsorSegment implements SponsorSegment {
         List<SponsorSegment> result = new ArrayList<>();
 
         for (Segment segment : segmentList.getSegments()) {
+            if (segment == null || segment.getCategory() == null ||
+                    Float.isNaN(segment.getStart()) || Float.isNaN(segment.getEnd()) ||
+                    Float.isInfinite(segment.getStart()) || Float.isInfinite(segment.getEnd()) ||
+                    segment.getStart() < 0 || segment.getEnd() <= segment.getStart()) {
+                continue;
+            }
+
             YouTubeSponsorSegment sponsorSegment = new YouTubeSponsorSegment();
             sponsorSegment.mStartMs = (long) (segment.getStart() * 1_000);
             sponsorSegment.mEndMs = (long) (segment.getEnd() * 1_000);

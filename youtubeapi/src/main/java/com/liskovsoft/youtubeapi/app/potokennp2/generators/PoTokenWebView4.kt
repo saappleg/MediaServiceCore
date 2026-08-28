@@ -265,7 +265,7 @@ internal class PoTokenWebView4 private constructor(
      */
     @JavascriptInterface
     fun onRunBotguardResult(botguardResponse: String) {
-        Log.d(TAG, "botguardResponse: $botguardResponse")
+        Log.d(TAG, "BotGuard snapshot completed")
 
         // NOTE: both urls can be used to get botguard response.
         // The first on produces more reliable token (without 403 error) but may hang upon request.
@@ -276,7 +276,7 @@ internal class PoTokenWebView4 private constructor(
             "[ \"${REQUEST_KEY}\", \"$botguardResponse\" ]",
         ) ?: return
 
-        Log.d(TAG, "GenerateIT response: $responseBody")
+        Log.d(TAG, "GenerateIT completed")
         val (integrityToken, expirationTimeInSeconds) = parseIntegrityTokenData(responseBody)
 
         // MOD: backport Instant.now().plusSeconds
@@ -311,7 +311,7 @@ internal class PoTokenWebView4 private constructor(
 
     //region Obtaining poTokens
     override fun generatePoToken(identifier: String): String {
-        Log.d(TAG, "generatePoToken() called with identifier $identifier")
+        Log.d(TAG, "Generating WebPO token")
         val latch = CountDownLatch(1)
         lateinit var pot: String
 
@@ -365,10 +365,9 @@ internal class PoTokenWebView4 private constructor(
      */
     @JavascriptInterface
     fun onObtainPoTokenResult(identifier: String, poTokenU8: String) {
-        Log.d(TAG, "Generated poToken (before decoding): identifier=$identifier poTokenU8=$poTokenU8")
         val poToken = u8ToBase64(poTokenU8)
 
-        Log.d(TAG, "Generated poToken: identifier=$identifier poToken=$poToken")
+        Log.d(TAG, "Generated WebPO token")
         popPoTokenEmitter(identifier)?.invoke(poToken)
     }
 

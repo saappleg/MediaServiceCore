@@ -9,6 +9,7 @@ import retrofit2.Call;
 import java.util.Set;
 
 public class SponsorBlockService {
+    private static final String SUPPORTED_ACTION_TYPES = ServiceHelper.toJsonArrayString("skip", "mute", "poi");
     private static SponsorBlockService sInstance;
     private final SponsorBlockApi mSponsorBlockApi;
 
@@ -25,8 +26,9 @@ public class SponsorBlockService {
     }
 
     public SegmentList getSegmentList(String videoId) {
-        Call<SegmentList> wrapper =
-                isAltServerEnabled() ? mSponsorBlockApi.getSegments2(videoId) : mSponsorBlockApi.getSegments(videoId);
+        Call<SegmentList> wrapper = isAltServerEnabled() ?
+                mSponsorBlockApi.getSegments2WithActions(videoId, SUPPORTED_ACTION_TYPES) :
+                mSponsorBlockApi.getSegmentsWithActions(videoId, SUPPORTED_ACTION_TYPES);
 
         return RetrofitHelper.get(wrapper);
     }
@@ -36,9 +38,10 @@ public class SponsorBlockService {
     }
 
     private SegmentList getSegmentListInt(String videoId, Set<String> categories) {
+        String categoriesJson = ServiceHelper.toJsonArrayString(categories);
         Call<SegmentList> wrapper = isAltServerEnabled() ?
-                mSponsorBlockApi.getSegments2(videoId, ServiceHelper.toJsonArrayString(categories)) :
-                mSponsorBlockApi.getSegments(videoId, ServiceHelper.toJsonArrayString(categories));
+                mSponsorBlockApi.getSegments2(videoId, categoriesJson, SUPPORTED_ACTION_TYPES) :
+                mSponsorBlockApi.getSegments(videoId, categoriesJson, SUPPORTED_ACTION_TYPES);
 
         return RetrofitHelper.get(wrapper);
     }
