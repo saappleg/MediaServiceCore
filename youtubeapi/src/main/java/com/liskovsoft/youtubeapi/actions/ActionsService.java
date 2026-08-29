@@ -22,7 +22,7 @@ public class ActionsService {
         Call<ActionResult> wrapper =
                 mActionsApi.setLike(ActionsApiHelper.getLikeActionQuery(videoId));
 
-        RetrofitHelper.get(wrapper); // ignore result
+        RetrofitHelper.get(wrapper);
     }
 
     public void removeLike(String videoId) {
@@ -30,7 +30,7 @@ public class ActionsService {
         Call<ActionResult> wrapper =
                 mActionsApi.removeLike(ActionsApiHelper.getLikeActionQuery(videoId));
 
-        RetrofitHelper.get(wrapper); // ignore result
+        RetrofitHelper.get(wrapper);
     }
 
     public void setDislike(String videoId) {
@@ -38,7 +38,7 @@ public class ActionsService {
         Call<ActionResult> wrapper =
                 mActionsApi.setDislike(ActionsApiHelper.getLikeActionQuery(videoId));
 
-        RetrofitHelper.get(wrapper); // ignore result
+        RetrofitHelper.get(wrapper);
     }
 
     public void removeDislike(String videoId) {
@@ -46,7 +46,7 @@ public class ActionsService {
         Call<ActionResult> wrapper =
                 mActionsApi.removeDislike(ActionsApiHelper.getLikeActionQuery(videoId));
 
-        RetrofitHelper.get(wrapper); // ignore result
+        RetrofitHelper.get(wrapper);
     }
 
     /**

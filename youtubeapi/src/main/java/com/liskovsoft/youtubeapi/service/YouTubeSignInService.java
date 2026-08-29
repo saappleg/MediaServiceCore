@@ -195,10 +195,6 @@ public class YouTubeSignInService implements SignInService {
 
         if (mCachedAuthorizationHeader != null && selectedAccount != null) {
             headers.put("Authorization", mCachedAuthorizationHeader);
-            // OAuth device tokens represent one signed-in Google identity. Profile/channel
-            // selection is scoped by AuthUser plus PageId; actions such as like/dislike are
-            // otherwise liable to fall back to the primary profile.
-            headers.put("X-Goog-AuthUser", "0");
             String pageIdToken = ((YouTubeAccount) selectedAccount).getPageIdToken();
             if (pageIdToken != null) {
                 // Apply branded account rights (restricted videos). Branded refresh token with current account page id.
