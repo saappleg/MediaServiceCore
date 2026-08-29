@@ -23,6 +23,8 @@ public class YouTubeSignInService implements SignInService {
     private static YouTubeSignInService sInstance;
     private final YouTubeAccountManager mAccountManager;
     private String mCachedAuthorizationHeader;
+    private String mCachedRefreshToken;
+    private String mCachedPageIdToken;
     private long mCacheUpdateTime;
 
     private YouTubeSignInService() {
@@ -57,7 +59,14 @@ public class YouTubeSignInService implements SignInService {
     }
 
     private synchronized void updateAuthHeadersIfNeeded() {
+        Account selectedAccount = mAccountManager.getSelectedAccount();
+        YouTubeAccount selectedYouTubeAccount = selectedAccount instanceof YouTubeAccount ? (YouTubeAccount) selectedAccount : null;
+        String selectedRefreshToken = selectedYouTubeAccount != null ? selectedYouTubeAccount.getRefreshToken() : null;
+        String selectedPageIdToken = selectedYouTubeAccount != null ? selectedYouTubeAccount.getPageIdToken() : null;
+
         if (mCachedAuthorizationHeader != null && Helpers.equals(mCachedAuthorizationHeader, RetrofitOkHttpHelper.getAuthHeaders().get("Authorization"))
+                && Helpers.equals(mCachedRefreshToken, selectedRefreshToken)
+                && Helpers.equals(mCachedPageIdToken, selectedPageIdToken)
                 && System.currentTimeMillis() - mCacheUpdateTime < TOKEN_REFRESH_PERIOD_MS) {
             return;
         }
@@ -69,7 +78,10 @@ public class YouTubeSignInService implements SignInService {
 
     private void updateAuthHeaders() {
         Account account = mAccountManager.getSelectedAccount();
-        String refreshToken = account != null ? ((YouTubeAccount) account).getRefreshToken() : null;
+        YouTubeAccount youtubeAccount = account instanceof YouTubeAccount ? (YouTubeAccount) account : null;
+        String refreshToken = youtubeAccount != null ? youtubeAccount.getRefreshToken() : null;
+        mCachedRefreshToken = refreshToken;
+        mCachedPageIdToken = youtubeAccount != null ? youtubeAccount.getPageIdToken() : null;
         // get or create authorization on fly
         mCachedAuthorizationHeader = createAuthorizationHeader(refreshToken);
         syncWithRetrofit();
@@ -95,6 +107,8 @@ public class YouTubeSignInService implements SignInService {
 
     public void invalidateCache() {
         mCachedAuthorizationHeader = null;
+        mCachedRefreshToken = null;
+        mCachedPageIdToken = null;
         mCacheUpdateTime = 0;
     }
 
@@ -181,6 +195,10 @@ public class YouTubeSignInService implements SignInService {
 
         if (mCachedAuthorizationHeader != null && selectedAccount != null) {
             headers.put("Authorization", mCachedAuthorizationHeader);
+            // OAuth device tokens represent one signed-in Google identity. Profile/channel
+            // selection is scoped by AuthUser plus PageId; actions such as like/dislike are
+            // otherwise liable to fall back to the primary profile.
+            headers.put("X-Goog-AuthUser", "0");
             String pageIdToken = ((YouTubeAccount) selectedAccount).getPageIdToken();
             if (pageIdToken != null) {
                 // Apply branded account rights (restricted videos). Branded refresh token with current account page id.

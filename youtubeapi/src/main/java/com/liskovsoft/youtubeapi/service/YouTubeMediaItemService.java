@@ -268,6 +268,10 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public void setLike(MediaItem item) {
+        if (item == null || item.getVideoId() == null) {
+            return;
+        }
+
         checkSigned();
 
         getActionsService().setLike(item.getVideoId());
@@ -275,6 +279,10 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public void removeLike(MediaItem item) {
+        if (item == null || item.getVideoId() == null) {
+            return;
+        }
+
         checkSigned();
 
         getActionsService().removeLike(item.getVideoId());
@@ -282,6 +290,10 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public void setDislike(MediaItem item) {
+        if (item == null || item.getVideoId() == null) {
+            return;
+        }
+
         checkSigned();
 
         getActionsService().setDislike(item.getVideoId());
@@ -289,6 +301,10 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public void removeDislike(MediaItem item) {
+        if (item == null || item.getVideoId() == null) {
+            return;
+        }
+
         checkSigned();
 
         getActionsService().removeDislike(item.getVideoId());

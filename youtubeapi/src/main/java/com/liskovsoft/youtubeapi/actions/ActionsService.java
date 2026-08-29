@@ -18,6 +18,7 @@ public class ActionsService {
     }
 
     public void setLike(String videoId) {
+        if (videoId == null) return;
         Call<ActionResult> wrapper =
                 mActionsApi.setLike(ActionsApiHelper.getLikeActionQuery(videoId));
 
@@ -25,6 +26,7 @@ public class ActionsService {
     }
 
     public void removeLike(String videoId) {
+        if (videoId == null) return;
         Call<ActionResult> wrapper =
                 mActionsApi.removeLike(ActionsApiHelper.getLikeActionQuery(videoId));
 
@@ -32,6 +34,7 @@ public class ActionsService {
     }
 
     public void setDislike(String videoId) {
+        if (videoId == null) return;
         Call<ActionResult> wrapper =
                 mActionsApi.setDislike(ActionsApiHelper.getLikeActionQuery(videoId));
 
@@ -39,6 +42,7 @@ public class ActionsService {
     }
 
     public void removeDislike(String videoId) {
+        if (videoId == null) return;
         Call<ActionResult> wrapper =
                 mActionsApi.removeDislike(ActionsApiHelper.getLikeActionQuery(videoId));
 
