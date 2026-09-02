@@ -23,10 +23,6 @@ android {
         // small tests: https://stackoverflow.com/questions/4671923/what-is-the-purpose-of-smalltest-mediumtest-and-largetest-annotations-in-an
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // More info: http://myhexaville.com/2017/03/10/android-multidex/
-        // Additionally, you should extend your application from MultiDexApplication
-        multiDexEnabled = true
-
         // consumerProguardFiles 'proguard-rules.txt' // embed this file to aar
     }
 
